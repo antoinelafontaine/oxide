@@ -1,0 +1,205 @@
+<?php
+
+/**
+ * Initialize oxide
+ */
+function oxide_init($theme) {
+  $file = dirname($theme->filename) . '/template.php';
+  if (file_exists($file)) {
+    include_once "./$file";
+  }
+
+  // Set Haml parser options
+
+  if (!empty($theme->info['oxide']['options']['haml'])) {
+    _oxide_set_haml_options($theme, $theme->info['oxide']['options']['haml']);
+  }
+  else {
+    _oxide_set_haml_options($theme);
+  }
+
+  // Initialize parser
+  _oxide_init();
+
+}
+
+/**
+ * The extension for our templates
+ */
+function oxide_extension() {
+  return ".tpl.haml";
+}
+
+/**
+ * We're handling HAML template files
+ */
+function oxide_theme($existing, $type, $theme, $path) {
+  $templates = drupal_find_theme_functions($existing, array($theme));
+  $templates += drupal_find_theme_templates($existing, '.tpl.haml', $path);
+  return $templates;
+}
+
+/**
+ * Render a HAML template
+ */
+function oxide_render_template($template, $variables) {
+
+  // Retrieve options for the Haml parser
+  $options = _oxide_get_haml_options();
+
+  // Evaluate where the cached version of the parsed haml template should be
+  $base_theme = basename($variables['directory']);
+  $template_cache = _oxide_cached_haml_path($template, $base_theme);
+  $template_cache_fullpath = $template_cache['path'] . '/' . $template_cache['filename'];
+
+  if ( !_oxide_cache_is_fresh($template_cache_fullpath, $template) ) {
+
+    // Cached file doesn't exist or is old, generate a new file from haml template
+    if ( file_prepare_directory( $template_cache['path'], FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS ) ) {
+
+      $parser = new MtHaml\Environment('php', $options);
+      $compiled = $parser->compileString(file_get_contents($template), $template );
+
+      $write_to_cache = fopen($template_cache_fullpath, 'w');
+      fwrite( $write_to_cache, $compiled );
+      fclose( $write_to_cache );
+
+    } else {
+
+      drupal_set_message('Tried creating \'' . $template_cache['path'] . '\'. You must have your Drupal files directory correctly configured to use oxide.', 'error');
+
+    }
+
+  }
+
+  // Extract Variables to a local namescape, needed for template rendering
+  extract($variables, EXTR_SKIP);
+
+  // Render template
+  ob_start();
+  include drupal_realpath($template_cache_fullpath);
+  return ob_get_clean();
+}
+
+/**
+ * A function to allow alteration of underlying parser options by
+ * the theme using oxide at runtime.  Also allows modules
+ * to alter options as well.
+ *
+ *  @param $hook
+ *    The name of the alteration hook (e.g. haml_options)
+ *  @param $theme
+ *    Information for the theme.
+ *  @param $options
+ *    The options for the underlying parser.
+ */
+function oxide_alter($hook, &$options, $theme) {
+  $hook = 'oxide_' . $hook;
+
+  // Allow modules to alter options
+  drupal_alter($hook, $options, $theme);
+
+  // Allow theme to alter options
+  $theme_function = $theme->name . '_' . $hook . '_alter';
+  if (function_exists($theme_function)) {
+    $theme_function($options, $theme);
+  }
+}
+
+/**
+ * Internal helpers
+ *
+ * _oxide_init()
+ * _oxide_cached_haml_path($path, $base_theme)
+ * _oxide_cache_is_fresh($cached_file, $source_file)
+ * _oxide_default_haml_options()
+ * _oxide_set_haml_options()
+ * _oxide_get_haml_options()
+ *
+ */
+
+/**
+ * Initialize the Haml Parser
+ */
+function _oxide_init() {
+  $mthaml_autoloader = 'sites/all/libraries/MtHaml/Autoloader.php';
+  if( file_exists($mthaml_autoloader) ) {
+    require_once $mthaml_autoloader;
+    MtHaml\Autoloader::register();
+  } else {
+    drupal_set_message( 'MtHaml library not found in "' . $mthaml_autoloader . '" folder. You can download an install a copy of it from its github project page: https://github.com/arnaud-lb/MtHaml', 'error');
+  }
+}
+
+/**
+ * Determine the cached version path based on the original template path
+ */
+function _oxide_cached_haml_path($path, $base_theme) {
+  $exploded_path = explode('/', $path);
+  $base_theme_index = array_search($base_theme, $exploded_path);
+
+  if( $base_theme_index ){
+    $template_source_path = array_slice($exploded_path, $base_theme_index, count($exploded_path) );
+    $template_filename = array_pop($template_source_path);
+    $cached_filename = str_replace('.haml', '.php', $template_filename);
+  }
+
+  return array( 'path' => file_default_scheme() . '://oxide/' . implode('/', $template_source_path), 'filename' => $cached_filename );
+}
+
+/**
+ * Check to see if cached file exist and is older than the source file
+ */
+function _oxide_cache_is_fresh($cached_file, $source_file) {
+  if (file_exists($cached_file) && file_exists($source_file)) {
+    if (drupal_realpath($cached_file) && drupal_realpath($source_file)) {
+      if (filemtime($cached_file) > filemtime($source_file)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Default options for the Haml parser.
+ */
+function _oxide_default_haml_options() {
+  $options = array(
+    'format' => 'html5',
+    'enable_escaper' => false,
+    'escape_html' => false,
+    'escape_attrs' => false,
+    'autoclose' => array('meta', 'img', 'link', 'br', 'hr', 'input', 'area', 'param', 'col', 'base'),
+    'charset' => 'UTF-8',
+  );
+
+  return $options;
+}
+
+/**
+ * Get options for the Haml parser
+ */
+function _oxide_get_haml_options() {
+  return _oxide_set_haml_options();
+}
+
+/**
+ * Set options for the Haml parser.
+ */
+function _oxide_set_haml_options($theme = array(), $options = array()) {
+  $set_options = &drupal_static(__FUNCTION__);
+
+  // If no theme was passed in then return the options that have been set
+  if (!empty($set_options)) {
+    return $set_options;
+  }
+
+  // Merge options from theme's info file with the defaults
+  $set_options = array_merge(_oxide_default_haml_options(), $options);
+
+  // Allow modules & running theme to alter Haml parser options
+  oxide_alter('haml_options', $set_options, $theme);
+
+  return $set_options;
+}
