@@ -1,9 +1,12 @@
-oxide
+Oxide
 =====
 
-A Haml theme engine for Drupal
+A Haml theme engine for Drupal.
 
-Requires a copy of MtHaml Haml parser to be placed in _sites/all/libraries_ or _sites/[domain]/libraries_ of your Drupal installation
+Dependencies
+============
+
+Requires a copy of MtHaml Haml parser to be placed in _sites/all/libraries_ or _sites/[domain]/libraries_ of your Drupal installation.
 
 MtHaml project page on github: https://github.com/arnaud-lb/MtHaml
 
@@ -11,7 +14,7 @@ MtHaml project page on github: https://github.com/arnaud-lb/MtHaml
 Usage guidelines
 ================
 
-The engine needs to first be placed in the _sites/all/themes/engine_ or the _sites/[domain] variant folder
+The engine needs to first be placed in the _sites/all/themes/engine_ or the _sites/[domain]_ variant folder.
 
 Then you need to declare that you'll be using _oxide_ as your theme engine in your theme info file.
 
