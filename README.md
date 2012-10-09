@@ -6,7 +6,7 @@ A Haml theme engine for Drupal.
 The engine is based on original work of Kyle Cunningham.  
 **Peroxide project page** on github: https://github.com/codeincarnate/peroxide
 
-The goal is now limited to _only_ provide Haml template support to Drupal.
+The goal is now limited to _only_ providing Haml template support to Drupal.
 
 Dependencies
 ============
