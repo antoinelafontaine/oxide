@@ -28,7 +28,7 @@ core = 7.x
 engine = oxide
 ```
 
-Your all set to use haml template files for your new theme!
+Your all set to use haml template files for your new theme! Happy theming!
 
 
 Notes
@@ -40,5 +40,3 @@ These can be located under _sites/default/files/oxide/[theme name]/
 
 A small drush command - drush oxide-clear-cache (occ) - has been defined for emptying that cache folder whenever you rename or move a template file when developing. 
 You can also safely remove that folder manualy and the engine will recreate it when required.
-
-Happy theming!
