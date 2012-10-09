@@ -3,8 +3,8 @@ Oxide
 
 A Haml theme engine for Drupal.
 
-The engine is based on original work of Kyle Cunningham.
-_Peroxide_ project : https://github.com/codeincarnate/peroxide
+The engine is based on original work of Kyle Cunningham.  
+**Peroxide_ project** : https://github.com/codeincarnate/peroxide
 
 The goal is now limited to _only_ provide Haml template support to Drupal.
 
