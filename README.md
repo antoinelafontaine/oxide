@@ -32,7 +32,7 @@ core = 7.x
 engine = oxide
 ```
 
-Your all set to use haml template files for your new theme! Happy theming!
+You're all set to use haml template files for your new theme! Happy theming!
 
 
 Notes
